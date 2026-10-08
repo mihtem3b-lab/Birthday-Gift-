@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Волшебный Пазл для Бабушки! 🧩</title>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: radial-gradient(circle at center, #1b0524 0%, #0a0110 100%);
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            padding: 15px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 105, 180, 0.2);
+            border-radius: 30px;
+            padding: 35px 20px;
+            box-shadow: 0 0 50px rgba(255, 0, 127, 0.25);
+            max-width: 430px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+        .title {
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #ff007f, #ff758c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+        }
+        .instructions {
+            font-size: 1.1rem;
+            color: #ffb7d2;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        .puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            max-width: 300px;
+            margin: 0 auto 30px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 20px;
+        }
+        .puzzle-piece {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed rgba(255, 105, 180, 0.4);
+            border-radius: 15px;
+            font-size: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.3s ease, background 0.3s;
+        }
+        .puzzle-piece.solved {
+            border-style: solid;
+            border-color: #00ff66;
+            background: rgba(0, 255, 102, 0.1);
+            box-shadow: 0 0 20px rgba(0, 255, 102, 0.4);
+        }
+        .hidden { 
+            display: none !important; 
+        }
+        .birthday-title {
+            font-size: 2.8rem;
+            font-weight: 900;
+            line-height: 1.1;
+            background: linear-gradient(45deg, #ff007f, #ffaa00, #00ff66, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 25px;
+        }
+        .wishes {
+            font-size: 1.25rem;
+            line-height: 1.6;
+            margin-bottom: 35px;
+        }
+        .restart-btn {
+            background: linear-gradient(45deg, #ff007f, #ff5500);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            font-size: 1.2rem;
+            font-weight: 900;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .confetti {
+            position: absolute;
+            top: -30px;
+            animation: fall linear forwards;
+            z-index: 1;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="confetti-wrapper"></div>
+
+    <div class="card" id="mainCard">
+        <!-- ЭКРАН С ИГРОЙ -->
+        <div id="gameScreen">
+            <h1 class="title">Волшебный Пазл 🧩</h1>
+            <p class="instructions">Бабуля, нажимай на картинки, чтобы перевернуть их ровно и собрать открытку!</p>
+            
+            <div class="puzzle-grid">
+                <div class="puzzle-piece" id="piece1" onclick="rotatePiece(1)">🎂</div>
+                <div class="puzzle-piece" id="piece2" onclick="rotatePiece(2)">🎈</div>
+                <div class="puzzle-piece" id="piece3" onclick="rotatePiece(3)">🎁</div>
+                <div class="puzzle-piece" id="piece4" onclick="rotatePiece(4)">🌸</div>
+            </div>
+        </div>
+
+        <!-- ЭКРАН С ПОЗДРАВЛЕНИЕМ -->
+        <div id="successScreen" class="hidden">
+            <div style="font-size: 4rem; margin-bottom: 15px;">🎂🎉🎈</div>
+            <h1 class="birthday-title">С ДНЕМ<br>РОЖДЕНИЯ,<br>БАБУШКА!</h1>
+            <p class="wishes">Ты успешно собрала весь праздничный пазл! Пусть твоя жизнь складывается из таких же ярких, счастливых и добрых кусочков. Желаю тебе крепкого здоровья, долгих лет жизни и бесконечной радости! Очень тебя люблю! ❤️✨</p>
+            <button class="restart-btn" onclick="location.reload()">Собрать еще раз</button>
+        </div>
+    </div>
+
+    <script>
+        // Изначально картинки повернуты (1 = 90 градусов, 2 = 180, 3 = 270, 0 = ровно)
+        let angles = {
+            1: 1,
+            2: 2,
+            3: 3,
+            4: 1
+        };
+
+        // Задаем начальный поворот при старте страницы
+        document.getElementById("piece1").style.transform = "rotate(90deg)";
+        document.getElementById("piece2").style.transform = "rotate(180deg)";
+        document.getElementById("piece3").style.transform = "rotate(270deg)";
+        document.getElementById("piece4").style.transform = "rotate(90deg)";
+
+        function rotatePiece(id) {
+            // Прибавляем шаг поворота (от 0 до 3)
+            angles[id] = (angles[id] + 1) % 4;
+            
+            let degrees = angles[id] * 90;
+            const piece = document.getElementById("piece" + id);
+            piece.style.transform = "rotate(" + degrees + "deg)";
+            
+            // Если угол стал 0 — картинка встала ровно!
+            if (angles[id] === 0) {
+                piece.classList.add("solved");
+            } else {
+                piece.classList.remove("solved");
+            }
+            
+            checkPuzzle();
+        }
+
+        function checkPuzzle() {
+            // Проверяем, что у всех четырех картинок угол стал равен 0
+            if (angles[1] === 0 && angles[2] === 0 && angles[3] === 0 && angles[4] === 0) {
+                setTimeout(function() {
+                    document.getElementById("gameScreen").classList.add("hidden");
+                    document.getElementById("successScreen").classList.remove("hidden");
+                    spawnGrandConfetti();
+                }, 500);
+            }
+        }
+
+        function spawnGrandConfetti() {
+            const wrapper = document.getElementById("confetti-wrapper");
+            const colors = ["#ff007f", "#ffaa00", "#00ff66", "#00f2fe", "#ffffff"];
+            const elements = ["✨", "🎉", "🎈", "❤️", "🌸", "🎂"]; 
+
+            for (let i = 0; i < 120; i++) {
+                const confetti = document.createElement("div");
+                confetti.classList.add("confetti");
+                
+                if (Math.random() > 0.4) {
+                    confetti.innerText = elements[Math.floor(Math.random() * elements.length)];
+                    confetti.style.fontSize = (Math.random() * 20 + 20) + "px"; 
+                } else {
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.width = (Math.random() * 10 + 10) + "px";
+                    confetti.style.height = confetti.style.width;
+                    confetti.style.borderRadius = "50%";
+                }
+                
+                confetti.style.left = (Math.random() * 100) + "vw";
+                
+                const duration = Math.random() * 2.5 + 2.5; 
+                const delay = Math.random() * 1.5;
+                confetti.style.animationDuration = duration + "s";
+                confetti.style.animationDelay = delay + "s";
+                
+                wrapper.appendChild(confetti);
+            }
+        }
+    </script>
+</body>
+  </html>
+  
